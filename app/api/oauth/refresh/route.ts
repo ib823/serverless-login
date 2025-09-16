@@ -1,3 +1,4 @@
+export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { parse } from 'cookie';
 import { getRefreshToken, deleteRefreshToken, setRefreshToken } from '@/lib/db';
@@ -16,31 +17,26 @@ export async function POST(request: NextRequest) {
   }
 
   const refreshRecord = await getRefreshToken(refreshTokenId);
-  
   if (!refreshRecord) {
     await audit('oauth_refresh_denied', undefined, ip, { reason: 'not_found' });
     return NextResponse.json({ error: 'Invalid refresh token' }, { status: 401 });
   }
-
   if (refreshRecord.exp < Math.floor(Date.now() / 1000)) {
     await deleteRefreshToken(refreshTokenId);
     await audit('oauth_refresh_denied', refreshRecord.sub, ip, { reason: 'expired' });
     return NextResponse.json({ error: 'Refresh token expired' }, { status: 401 });
   }
 
+  // Rotate
   await deleteRefreshToken(refreshTokenId);
 
-  const accessTokenTTL = parseInt(process.env.ACCESS_TOKEN_TTL_SEC || '3600');
-  const refreshTokenTTL = parseInt(process.env.REFRESH_TOKEN_TTL_SEC || '1209600');
+  const accessTokenTTL = parseInt(process.env.ACCESS_TOKEN_TTL_SEC || '3600', 10);
+  const refreshTokenTTL = parseInt(process.env.REFRESH_TOKEN_TTL_SEC || '1209600', 10);
 
-  const accessToken = await signJWT({
-    sub: refreshRecord.sub,
-    scope: 'openid email',
-  }, \`\${accessTokenTTL}s\`);
+  const accessToken = await signJWT({ sub: refreshRecord.sub, scope: 'openid email' }, `${accessTokenTTL}s`);
 
   const newRefreshTokenId = uuidv4();
   const newRotationId = uuidv4();
-
   await setRefreshToken(newRefreshTokenId, {
     sub: refreshRecord.sub,
     rot: newRotationId,
@@ -50,20 +46,11 @@ export async function POST(request: NextRequest) {
   await audit('oauth_refresh_issued', refreshRecord.sub, ip);
 
   const refreshCookie = serialize('__Host-refresh', newRefreshTokenId, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: refreshTokenTTL,
+    httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: refreshTokenTTL,
   });
 
   return NextResponse.json(
-    {
-      access_token: accessToken,
-      token_type: 'Bearer',
-      expires_in: accessTokenTTL,
-      scope: 'openid email',
-    },
+    { access_token: accessToken, token_type: 'Bearer', expires_in: accessTokenTTL, scope: 'openid email' },
     { headers: { 'Set-Cookie': refreshCookie } }
   );
 }
