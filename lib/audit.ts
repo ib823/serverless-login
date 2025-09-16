@@ -1,16 +1,10 @@
 import { logAudit } from './db';
 
-export async function audit(
-  type: string,
-  sub?: string,
-  ip?: string,
-  details?: Record<string, any>
-) {
+export async function audit(type: string, sub: string, ip: string) {
   await logAudit({
     type,
-    timestamp: Date.now(),
     sub,
+    timestamp: Date.now(),
     ip,
-    details: details || {}
   });
 }

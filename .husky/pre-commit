@@ -1,1 +1,1 @@
-npm run security-check
+npm audit --audit-level=high

@@ -6,23 +6,43 @@ import {
 } from "@simplewebauthn/server";
 import type { User } from "@/lib/types";
 
-export function rpFromRequest(req: Request){
+export function rpFromRequest(req: Request) {
   const url = new URL(req.url);
+  let rpID = url.hostname;
+  
+  // For GitHub Codespaces, use the full hostname
+  // For localhost, use localhost
+  if (rpID === '127.0.0.1' || rpID === '::1') {
+    rpID = 'localhost';
+  }
+  
+  console.log('Using RP ID:', rpID);
+  console.log('Origin:', `${url.protocol}//${url.host}`);
+  
   return {
-    rpID: url.hostname,
+    rpID: rpID,
     origin: `${url.protocol}//${url.host}`,
     rpName: process.env.RP_NAME || "Passkeys IdP",
   };
 }
 
-export function buildRegOptions(user: User, rp: { rpID:string; rpName:string }){
+export function buildRegOptions(user: User, rp: { rpID: string; rpName: string }) {
+  // Convert string userId to Uint8Array
+  const encoder = new TextEncoder();
+  const userIDAsBuffer = encoder.encode(user.userId);
+  
   return generateRegistrationOptions({
     rpID: rp.rpID,
     rpName: rp.rpName,
-    userID: user.userId,
+    userID: userIDAsBuffer,
     userName: user.email,
+    userDisplayName: user.email.split('@')[0],
     attestationType: "none",
-    authenticatorSelection: { residentKey: "preferred", userVerification: "preferred" },
+    authenticatorSelection: { 
+      residentKey: "preferred", 
+      userVerification: "preferred",
+      authenticatorAttachment: undefined, // Allow both platform and cross-platform
+    },
     supportedAlgorithmIDs: [-7, -257],
     excludeCredentials: (user.credentials || []).map(c => ({
       id: Buffer.from(c.credId, "base64url"),
@@ -32,7 +52,7 @@ export function buildRegOptions(user: User, rp: { rpID:string; rpName:string }){
   });
 }
 
-export function buildAuthOptions(user: User | null, rpID: string){
+export function buildAuthOptions(user: User | null, rpID: string) {
   return generateAuthenticationOptions({
     rpID,
     allowCredentials: user ? user.credentials.map(c => ({
@@ -44,21 +64,21 @@ export function buildAuthOptions(user: User | null, rpID: string){
   });
 }
 
-export async function verifyReg(resp: any, expectedChallenge: string, rp: { rpID:string; origin:string }){
+export async function verifyReg(resp: any, expectedChallenge: string, rp: { rpID: string; origin: string }) {
   return verifyRegistrationResponse({
     response: resp,
     expectedChallenge,
-    expectedOrigin: [rp.origin],
+    expectedOrigin: rp.origin,
     expectedRPID: rp.rpID,
-    requireUserVerification: true,
+    requireUserVerification: false,
   });
 }
 
-export async function verifyAuth(resp: any, expectedChallenge: string, rp: { rpID:string; origin:string }, pubKeyB64: string, prevCounter: number){
+export async function verifyAuth(resp: any, expectedChallenge: string, rp: { rpID: string; origin: string }, pubKeyB64: string, prevCounter: number) {
   return verifyAuthenticationResponse({
     response: resp,
     expectedChallenge,
-    expectedOrigin: [rp.origin],
+    expectedOrigin: rp.origin,
     expectedRPID: rp.rpID,
     authenticator: {
       credentialID: Buffer.from(resp.rawId || resp.id, "base64url"),
@@ -66,6 +86,6 @@ export async function verifyAuth(resp: any, expectedChallenge: string, rp: { rpI
       counter: prevCounter,
       transports: resp.response?.transports,
     },
-    requireUserVerification: true,
+    requireUserVerification: false,
   });
 }

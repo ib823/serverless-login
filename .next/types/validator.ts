@@ -146,6 +146,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/api/security/metrics/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/security/metrics">> = Specific
+  const handler = {} as typeof import("../../app/api/security/metrics/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/api/session/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/session">> = Specific
@@ -168,6 +177,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/webauthn/auth/verify">> = Specific
   const handler = {} as typeof import("../../app/api/webauthn/auth/verify/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/webauthn/check-user/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/webauthn/check-user">> = Specific
+  const handler = {} as typeof import("../../app/api/webauthn/check-user/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

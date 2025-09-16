@@ -1,49 +1,29 @@
-import { SignJWT, importPKCS8, importSPKI, jwtVerify, generateKeyPair, exportJWK, type JWK } from "jose";
+import jwt from 'jsonwebtoken';
 
-let _priv: CryptoKey | null = null;
-let _pub: CryptoKey | null = null;
-let _jwks: { keys: JWK[] } | null = null;
+const privateKey = process.env.JWT_PRIVATE_KEY_PEM || '';
+const publicKey = process.env.JWT_PUBLIC_KEY_PEM || '';
 
-async function ensureKeys(){
-  if (_priv && _pub && _jwks) return;
-  const privPem = process.env.JWT_PRIVATE_KEY_PEM;
-  const pubPem  = process.env.JWT_PUBLIC_KEY_PEM;
-  if (privPem && pubPem){
-    const priv = privPem.replace(/\\n/g, "\n");
-    const pub  = pubPem.replace(/\\n/g, "\n");
-    _priv = await importPKCS8(priv, "RS256");
-    _pub  = await importSPKI(pub, "RS256");
-    const jwk = await exportJWK(_pub); jwk.use="sig"; jwk.alg="RS256"; jwk.kid="main";
-    _jwks = { keys:[jwk] };
-  } else {
-    const { privateKey, publicKey } = await generateKeyPair("RS256");
-    _priv = privateKey; _pub = publicKey;
-    const jwk = await exportJWK(_pub); jwk.use="sig"; jwk.alg="RS256"; jwk.kid="ephemeral";
-    _jwks = { keys:[jwk] };
+export async function signSession(email: string, ttl: number): Promise<string> {
+  return signJWT({ sub: email }, `${ttl}s`);
+}
+
+export async function signJWT(payload: any, expiresIn: string = '1h'): Promise<string> {
+  return jwt.sign(payload, privateKey, {
+    algorithm: 'RS256',
+    expiresIn,
+    issuer: process.env.NEXT_PUBLIC_APP_URL,
+    audience: process.env.NEXT_PUBLIC_APP_URL,
+  });
+}
+
+export async function verifySession(token: string): Promise<any> {
+  try {
+    return jwt.verify(token, publicKey, {
+      algorithms: ['RS256'],
+      issuer: process.env.NEXT_PUBLIC_APP_URL,
+      audience: process.env.NEXT_PUBLIC_APP_URL,
+    });
+  } catch {
+    return null;
   }
 }
-
-export async function signSession(sub: string, ttlSec=3600){
-  await ensureKeys();
-  const now = Math.floor(Date.now()/1000);
-  return new SignJWT({ sub })
-    .setProtectedHeader({ alg:"RS256", kid:_jwks!.keys[0].kid })
-    .setIssuedAt(now)
-    .setExpirationTime(now + ttlSec)
-    .sign(_priv!);
-}
-
-/** Convenience for API tokens: signJWT(payload, "3600s") or signJWT(payload, 3600) */
-export async function signJWT(payload: Record<string, any>, exp: string | number = "3600s"){
-  await ensureKeys();
-  const jwt = new SignJWT(payload).setProtectedHeader({ alg:"RS256", kid:_jwks!.keys[0].kid }).setIssuedAt();
-  if (typeof exp === "string") jwt.setExpirationTime(exp); else jwt.setExpirationTime(Math.floor(Date.now()/1000) + exp);
-  return jwt.sign(_priv!);
-}
-
-export async function verifySession(token: string){
-  await ensureKeys();
-  try{ const { payload } = await jwtVerify(token, _pub!); return payload; } catch { return null; }
-}
-
-export async function getJWKS(){ await ensureKeys(); return _jwks!; }
