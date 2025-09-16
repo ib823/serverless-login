@@ -57,26 +57,12 @@
       "static/chunks/main-app-de4f58b5260e6dfd.js",
       "static/chunks/app/api/session/route-e6c932d7b9e2d4ec.js"
     ],
-    "/api/webauthn/auth/options/route": [
-      "static/chunks/webpack-4a462cecab786e93.js",
-      "static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "static/chunks/255-40634877ae3e8e9d.js",
-      "static/chunks/main-app-de4f58b5260e6dfd.js",
-      "static/chunks/app/api/webauthn/auth/options/route-e6c932d7b9e2d4ec.js"
-    ],
     "/api/webauthn/auth/verify/route": [
       "static/chunks/webpack-4a462cecab786e93.js",
       "static/chunks/4bd1b696-c023c6e3521b1417.js",
       "static/chunks/255-40634877ae3e8e9d.js",
       "static/chunks/main-app-de4f58b5260e6dfd.js",
       "static/chunks/app/api/webauthn/auth/verify/route-e6c932d7b9e2d4ec.js"
-    ],
-    "/api/webauthn/register/options/route": [
-      "static/chunks/webpack-4a462cecab786e93.js",
-      "static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "static/chunks/255-40634877ae3e8e9d.js",
-      "static/chunks/main-app-de4f58b5260e6dfd.js",
-      "static/chunks/app/api/webauthn/register/options/route-e6c932d7b9e2d4ec.js"
     ],
     "/api/webauthn/register/verify/route": [
       "static/chunks/webpack-4a462cecab786e93.js",
@@ -85,19 +71,12 @@
       "static/chunks/main-app-de4f58b5260e6dfd.js",
       "static/chunks/app/api/webauthn/register/verify/route-e6c932d7b9e2d4ec.js"
     ],
-    "/api/metrics/route": [
+    "/api/credentials/[id]/route": [
       "static/chunks/webpack-4a462cecab786e93.js",
       "static/chunks/4bd1b696-c023c6e3521b1417.js",
       "static/chunks/255-40634877ae3e8e9d.js",
       "static/chunks/main-app-de4f58b5260e6dfd.js",
-      "static/chunks/app/api/metrics/route-e6c932d7b9e2d4ec.js"
-    ],
-    "/api/oauth/token/route": [
-      "static/chunks/webpack-4a462cecab786e93.js",
-      "static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "static/chunks/255-40634877ae3e8e9d.js",
-      "static/chunks/main-app-de4f58b5260e6dfd.js",
-      "static/chunks/app/api/oauth/token/route-e6c932d7b9e2d4ec.js"
+      "static/chunks/app/api/credentials/[id]/route-e6c932d7b9e2d4ec.js"
     ],
     "/api/oauth/refresh/route": [
       "static/chunks/webpack-4a462cecab786e93.js",
@@ -106,12 +85,33 @@
       "static/chunks/main-app-de4f58b5260e6dfd.js",
       "static/chunks/app/api/oauth/refresh/route-e6c932d7b9e2d4ec.js"
     ],
-    "/api/credentials/[id]/route": [
+    "/api/oauth/token/route": [
       "static/chunks/webpack-4a462cecab786e93.js",
       "static/chunks/4bd1b696-c023c6e3521b1417.js",
       "static/chunks/255-40634877ae3e8e9d.js",
       "static/chunks/main-app-de4f58b5260e6dfd.js",
-      "static/chunks/app/api/credentials/[id]/route-e6c932d7b9e2d4ec.js"
+      "static/chunks/app/api/oauth/token/route-e6c932d7b9e2d4ec.js"
+    ],
+    "/api/metrics/route": [
+      "static/chunks/webpack-4a462cecab786e93.js",
+      "static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "static/chunks/255-40634877ae3e8e9d.js",
+      "static/chunks/main-app-de4f58b5260e6dfd.js",
+      "static/chunks/app/api/metrics/route-e6c932d7b9e2d4ec.js"
+    ],
+    "/api/webauthn/auth/options/route": [
+      "static/chunks/webpack-4a462cecab786e93.js",
+      "static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "static/chunks/255-40634877ae3e8e9d.js",
+      "static/chunks/main-app-de4f58b5260e6dfd.js",
+      "static/chunks/app/api/webauthn/auth/options/route-e6c932d7b9e2d4ec.js"
+    ],
+    "/api/webauthn/register/options/route": [
+      "static/chunks/webpack-4a462cecab786e93.js",
+      "static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "static/chunks/255-40634877ae3e8e9d.js",
+      "static/chunks/main-app-de4f58b5260e6dfd.js",
+      "static/chunks/app/api/webauthn/register/options/route-e6c932d7b9e2d4ec.js"
     ],
     "/login/page": [
       "static/chunks/webpack-4a462cecab786e93.js",
