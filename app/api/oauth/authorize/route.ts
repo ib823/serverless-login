@@ -1,54 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { parse } from 'cookie';
 import { setAuthCode } from '@/lib/db';
 import { oauthRL } from '@/lib/rl';
 import { audit } from '@/lib/audit';
 import { v4 as uuidv4 } from 'uuid';
+import { verifySession } from '@/lib/jwt';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for') || 'unknown';
-  const cookies = parse(request.headers.get('cookie') || '');
-  const session = cookies['__Host-session'];
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const clientId = url.searchParams.get('client_id')!;
+  const redirectUri = url.searchParams.get('redirect_uri')!;
+  const state = url.searchParams.get('state')!;
+  const codeChallenge = url.searchParams.get('code_challenge')!;
 
-  if (!session) {
+  const cookieHeader = request.headers.get('cookie') || '';
+  const cookies = parse(cookieHeader);
+
+  const token = cookies['__Host-session'];
+  if (!token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  const { success } = await oauthRL.limit(ip);
-  if (!success) {
-    return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
-  }
-
-  const searchParams = request.nextUrl.searchParams;
-  const clientId = searchParams.get('client_id');
-  const redirectUri = searchParams.get('redirect_uri');
-  const state = searchParams.get('state');
-  const codeChallenge = searchParams.get('code_challenge');
-  const codeChallengeMethod = searchParams.get('code_challenge_method');
-
-  if (!clientId || !redirectUri || !state || !codeChallenge || codeChallengeMethod !== 'S256') {
-    return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
-  }
-
-  const allowedRedirects = (process.env.OAUTH_REDIRECT_URIS || '').split(',');
-  if (!allowedRedirects.includes(redirectUri)) {
-    return NextResponse.json({ error: 'Invalid redirect_uri' }, { status: 400 });
-  }
+  const payload = await verifySession(token);
+  const sub = payload?.sub as string | undefined;
+  if (!sub) return NextResponse.redirect(new URL('/login', request.url));
 
   const code = uuidv4();
   await setAuthCode(code, {
-    sub: session,
+    sub,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
     client_id: clientId,
     redirect_uri: redirectUri,
   });
 
-  await audit('oauth_authorize', session, ip);
+  const ip = request.headers.get('x-forwarded-for') || '';
+  await audit('oauth_authorize', sub, ip);
 
-  const redirectUrl = new URL(redirectUri);
-  redirectUrl.searchParams.set('code', code);
-  redirectUrl.searchParams.set('state', state);
+  const redirect = new URL(redirectUri);
+  redirect.searchParams.set('code', code);
+  redirect.searchParams.set('state', state);
 
-  return NextResponse.redirect(redirectUrl);
+  return NextResponse.redirect(redirect.toString());
 }

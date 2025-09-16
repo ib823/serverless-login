@@ -1,70 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuthenticationResponse, rpID, origin } from '@/lib/webauthn';
+import { verifyAuth, rpFromRequest } from '@/lib/webauthn';
 import { getUser, updateUser, popChallenge } from '@/lib/db';
 import { audit } from '@/lib/audit';
 import { serialize } from 'cookie';
+import { signSession } from '@/lib/jwt';
 
-export async function POST(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for') || 'unknown';
-  const { email, response } = await request.json();
+export async function POST(request: Request) {
+  const body = await request.json();
+  const { email, response } = body;
 
-  const challenge = await popChallenge(email);
-  if (!challenge) {
-    return NextResponse.json({ error: 'Invalid challenge' }, { status: 400 });
-  }
+  const challenge = await popChallenge(`auth:${email}`);
+  if (!challenge) return new Response('Challenge expired', { status: 400 });
 
   const user = await getUser(email);
-  if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 400 });
-  }
+  if (!user) return new Response('User not found', { status: 404 });
 
-  const credential = user.credentials.find(
-    c => c.credId === response.id
-  );
+  const credential = user.credentials.find(c => c.credId === response.id);
+  if (!credential) return new Response('Credential not found', { status: 404 });
 
-  if (!credential) {
-    await audit('auth_verify_fail', email, ip, { reason: 'credential_not_found' });
-    return NextResponse.json({ error: 'Credential not found' }, { status: 400 });
-  }
+  const rp = rpFromRequest(request);
+  const verification = await verifyAuth(response, challenge, rp, credential.publicKey, credential.counter);
 
-  try {
-    const verification = await verifyAuthenticationResponse({
-      response,
-      expectedChallenge: challenge,
-      expectedOrigin: origin,
-      expectedRPID: rpID,
-      authenticator: {
-        credentialID: Buffer.from(credential.credId, 'base64url'),
-        credentialPublicKey: Buffer.from(credential.publicKey, 'base64url'),
-        counter: credential.counter,
-      },
-    });
+  if (!verification.verified) return new Response('Invalid authentication', { status: 400 });
 
-    if (!verification.verified) {
-      await audit('auth_verify_fail', email, ip);
-      return NextResponse.json({ error: 'Verification failed' }, { status: 400 });
-    }
+  await updateUser(email, verification.authenticationInfo);
 
-    credential.counter = verification.authenticationInfo.newCounter;
-    credential.lastUsedAt = Date.now();
-    await updateUser(user);
+  const jwt = await signSession(email, parseInt(process.env.ACCESS_TOKEN_TTL_SEC || '3600'));
+  const sessionCookie = serialize('__Host-session', jwt, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: parseInt(process.env.ACCESS_TOKEN_TTL_SEC || '3600'),
+  });
 
-    await audit('auth_verify', email, ip);
+  await audit('auth_verify', email, request.headers.get('x-forwarded-for') || '');
 
-    const sessionCookie = serialize('__Host-session', email, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 86400,
-    });
-
-    return NextResponse.json(
-      { verified: true },
-      { headers: { 'Set-Cookie': sessionCookie } }
-    );
-  } catch (error) {
-    await audit('auth_verify_error', email, ip, { error: String(error) });
-    return NextResponse.json({ error: 'Verification failed' }, { status: 400 });
-  }
+  return new Response(null, { status: 200, headers: { 'Set-Cookie': sessionCookie } });
 }

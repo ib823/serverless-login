@@ -1,46 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { generateRegistrationOptions, rpName, rpID } from '@/lib/webauthn';
+import { buildRegOptions, rpFromRequest } from '@/lib/webauthn';
 import { getUser, setChallenge } from '@/lib/db';
-import { webauthnRL } from '@/lib/rl';
-import { audit } from '@/lib/audit';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function POST(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for') || 'unknown';
-  const { success } = await webauthnRL.limit(ip);
-  
-  if (!success) {
-    return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
-  }
+export async function POST(request: Request) {
+  const body = await request.json();
+  const email = body.email;
+  if (!email) return new Response('Missing email', { status: 400 });
 
-  const { email } = await request.json();
-  if (!email) {
-    return NextResponse.json({ error: 'Email required' }, { status: 400 });
-  }
+  const existing = await getUser(email);
+  const user = existing ?? { userId: uuidv4(), email, credentials: [], createdAt: Date.now() };
+  const rp = rpFromRequest(request);
+  const options = buildRegOptions(user as any, { rpID: rp.rpID, rpName: rp.rpName });
 
-  const user = await getUser(email);
-  const excludeCredentials = user?.credentials.map(c => ({
-    id: c.credId,
-    type: 'public-key' as const,
-    transports: c.transports,
-  })) || [];
-
-  const options = await generateRegistrationOptions({
-    rpName,
-    rpID,
-    userID: user?.userId || uuidv4(),
-    userName: email,
-    userDisplayName: email.split('@')[0],
-    excludeCredentials,
-    attestationType: 'none',
-    authenticatorSelection: {
-      residentKey: 'preferred',
-      userVerification: 'preferred',
-    },
-  });
-
-  await setChallenge(email, options.challenge);
-  await audit('reg_options', email, ip);
-
-  return NextResponse.json(options);
+  await setChallenge(`reg:${email}`, options.challenge);
+  return Response.json(options);
 }

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parse } from 'cookie';
+import { verifySession } from '@/lib/jwt';
 
 export async function GET(request: NextRequest) {
-  const cookies = parse(request.headers.get('cookie') || '');
-  const session = cookies['__Host-session'];
-  
-  return NextResponse.json({
-    user: session || null
-  });
+  const cookieHeader = request.headers.get('cookie') || '';
+  const cookies = parse(cookieHeader);
+  const token = cookies['__Host-session'];
+
+  if (!token) return NextResponse.json({ user: null });
+  const payload = await verifySession(token);
+
+  return NextResponse.json({ user: payload?.sub || null });
 }
