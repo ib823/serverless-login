@@ -33,6 +33,14 @@ export async function signSession(sub: string, ttlSec=3600){
     .sign(_priv!);
 }
 
+/** Convenience for API tokens: signJWT(payload, "3600s") or signJWT(payload, 3600) */
+export async function signJWT(payload: Record<string, any>, exp: string | number = "3600s"){
+  await ensureKeys();
+  const jwt = new SignJWT(payload).setProtectedHeader({ alg:"RS256", kid:_jwks!.keys[0].kid }).setIssuedAt();
+  if (typeof exp === "string") jwt.setExpirationTime(exp); else jwt.setExpirationTime(Math.floor(Date.now()/1000) + exp);
+  return jwt.sign(_priv!);
+}
+
 export async function verifySession(token: string){
   await ensureKeys();
   try{ const { payload } = await jwtVerify(token, _pub!); return payload; } catch { return null; }
