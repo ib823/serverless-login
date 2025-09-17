@@ -18,13 +18,13 @@ export async function POST(request: NextRequest) {
 
   const refreshRecord = await getRefreshToken(refreshTokenId);
   if (!refreshRecord) {
-    await audit('oauth_refresh_denied', undefined, ip, { reason: 'not_found' });
-    return NextResponse.json({ error: 'Invalid refresh token' }, { status: 401 });
+    await audit('oauth_refresh_denied', '', ip);
+    return NextResponse.json({ error: 'Invalid refresh token' });
   }
   if (refreshRecord.exp < Math.floor(Date.now() / 1000)) {
     await deleteRefreshToken(refreshTokenId);
-    await audit('oauth_refresh_denied', refreshRecord.sub, ip, { reason: 'expired' });
-    return NextResponse.json({ error: 'Refresh token expired' }, { status: 401 });
+    await audit('oauth_refresh_denied', refreshRecord.sub || '', ip);
+    return NextResponse.json({ error: 'Refresh token expired' });
   }
 
   // Rotate
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     exp: Math.floor(Date.now() / 1000) + refreshTokenTTL,
   });
 
-  await audit('oauth_refresh_issued', refreshRecord.sub, ip);
+  await audit('oauth_refresh_issued', refreshRecord.sub || '', ip);
 
   const refreshCookie = serialize('__Host-refresh', newRefreshTokenId, {
     httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: refreshTokenTTL,

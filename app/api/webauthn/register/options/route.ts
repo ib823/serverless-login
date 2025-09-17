@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { webauthnRL } from '@/lib/rl';
 import { buildRegOptions, rpFromRequest } from '@/lib/webauthn';
 import { getUser, setChallenge } from '@/lib/db';
-import { webauthnRL } from '@/lib/rl';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {

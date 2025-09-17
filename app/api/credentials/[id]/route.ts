@@ -1,8 +1,8 @@
 export const runtime = 'nodejs';
+import { credentialsRL } from '@/lib/rl';
 import { NextResponse } from 'next/server';
 import { parse } from 'cookie';
 import { getUser, updateUser } from '@/lib/db';
-import { credentialsRL } from '@/lib/rl';
 import { audit } from '@/lib/audit';
 
 export async function PATCH(request: Request, { params }: any) {
@@ -27,7 +27,7 @@ export async function PATCH(request: Request, { params }: any) {
 
   cred.friendlyName = friendlyName;
   await updateUser(user);
-  await audit('cred_rename', session, ip, { credId: id });
+  await audit('cred_rename', session, ip);
   return NextResponse.json({ success: true });
 }
 
@@ -53,6 +53,6 @@ export async function DELETE(request: Request, { params }: any) {
 
   user.credentials.splice(idx, 1);
   await updateUser(user);
-  await audit('cred_delete', session, ip, { credId: id });
+  await audit('cred_delete', session, ip);
   return NextResponse.json({ success: true });
 }

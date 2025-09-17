@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { redis } from './db-secure';
 import { logAudit } from './db-secure';
 

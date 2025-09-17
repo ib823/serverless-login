@@ -1,9 +1,9 @@
 import { verifyAuth, rpFromRequest } from '@/lib/webauthn';
+import { webauthnRL } from '@/lib/rl';
 import { getUser, updateUser, popChallenge } from '@/lib/db';
 import { audit } from '@/lib/audit';
 import { serialize } from 'cookie';
 import { signSession } from '@/lib/jwt';
-import { webauthnRL } from '@/lib/rl';
 
 export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for') || 'unknown';

@@ -27,3 +27,21 @@ export async function verifySession(token: string): Promise<any> {
     return null;
   }
 }
+
+export async function getJWKS() {
+  const publicKey = process.env.JWT_PUBLIC_KEY_PEM || '';
+  
+  // Basic JWKS structure for RS256
+  return {
+    keys: [
+      {
+        kty: 'RSA',
+        kid: process.env.JWT_KID || 'default',
+        use: 'sig',
+        alg: 'RS256',
+        n: Buffer.from(publicKey.split('\n').slice(1, -2).join(''), 'base64').toString('base64url'),
+        e: 'AQAB',
+      }
+    ]
+  };
+}

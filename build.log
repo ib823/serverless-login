@@ -1,0 +1,28 @@
+
+> passkeys-idp@1.0.0 build
+> next build
+
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+   ▲ Next.js 15.5.3
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 13.4s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./app/api/oauth/authorize/route.ts:3:10
+Type error: Module '"@/lib/rl-enhanced"' has no exported member 'oauthRL'.
+
+[0m [90m 1 |[39m [36mimport[39m { parse } [36mfrom[39m [32m'cookie'[39m[33m;[39m
+ [90m 2 |[39m [36mimport[39m { setAuthCode } [36mfrom[39m [32m'@/lib/db'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { oauthRL } [36mfrom[39m [32m'@/lib/rl-enhanced'[39m[33m;[39m
+ [90m   |[39m          [31m[1m^[22m[39m
+ [90m 4 |[39m [36mimport[39m { audit } [36mfrom[39m [32m'@/lib/audit'[39m[33m;[39m
+ [90m 5 |[39m [36mimport[39m { v4 [36mas[39m uuidv4 } [36mfrom[39m [32m'uuid'[39m[33m;[39m
+ [90m 6 |[39m [36mimport[39m { verifySession } [36mfrom[39m [32m'@/lib/jwt'[39m[33m;[39m[0m
+Next.js build worker exited with code: 1 and signal: null

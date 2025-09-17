@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { credentialsRL } from '@/lib/rl';
 import { parse } from 'cookie';
 import { getUser } from '@/lib/db';
-import { credentialsRL } from '@/lib/rl';
 import { audit } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {

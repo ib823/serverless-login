@@ -23,7 +23,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid registration' }, { status: 400 });
     }
 
-    const { credentialPublicKey, credentialID, counter } = verification.registrationInfo;
+    // Extract the credential information properly
+    const regInfo = verification.registrationInfo;
+    const credentialPublicKey = regInfo.credential.publicKey;
+    const credentialID = regInfo.credential.id;
+    const counter = regInfo.credential.counter || 0;
 
     let user = await getUser(email);
     
@@ -41,7 +45,7 @@ export async function POST(request: NextRequest) {
     user.credentials.push({
       credId: Buffer.from(credentialID).toString('base64url'),
       publicKey: Buffer.from(credentialPublicKey).toString('base64url'),
-      counter: counter || 0,
+      counter: counter,
       transports: response.response?.transports,
       createdAt: Date.now(),
     });
