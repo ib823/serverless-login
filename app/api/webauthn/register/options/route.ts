@@ -12,15 +12,12 @@ export async function POST(request: NextRequest) {
   if (!success) {
     return NextResponse.json({ error: 'Too many attempts' }, { status: 429 });
   }
-
   try {
     const body = await request.json();
     const { email } = body;
-
     if (!email) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
     }
-
     let user = await getUser(email);
     
     // Create new user if doesn't exist
@@ -31,22 +28,15 @@ export async function POST(request: NextRequest) {
         credentials: [],
         createdAt: Date.now(),
       };
-    }
-
     const rp = rpFromRequest(request);
-    
     // Debug logging
     console.log('RP configuration:', rp);
     console.log('Request URL:', request.url);
-    
     const options = await buildRegOptions(user, rp);
-    
     // Store challenge
     await setChallenge(`reg:${email}`, options.challenge);
-
     return NextResponse.json(options);
   } catch (error) {
     console.error('Registration options error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
 }

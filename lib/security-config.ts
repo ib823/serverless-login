@@ -6,5 +6,4 @@ export const SECURITY_CONFIG = {
   },
   session: {
     recentAuthWindow: 300, // 5 minutes
-  },
 };

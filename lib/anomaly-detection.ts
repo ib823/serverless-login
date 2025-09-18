@@ -8,7 +8,6 @@ interface LoginPattern {
   devices: string[];
   failedAttempts: number;
 }
-
 export async function checkLoginAnomaly(
   userId: string,
   ip: string,
@@ -22,7 +21,6 @@ export async function checkLoginAnomaly(
     devices: [],
     failedAttempts: 0,
   };
-
   const reasons: string[] = [];
   const currentHour = new Date().getHours();
   
@@ -33,44 +31,28 @@ export async function checkLoginAnomaly(
       reasons.push('Unusual login time');
     }
   }
-
   // Check location anomaly
   if (location && pattern.locations.length > 0) {
     if (!pattern.locations.includes(location)) {
       reasons.push('New location detected');
-    }
-  }
-
   // Check device anomaly
   if (pattern.devices.length > 0) {
     if (!pattern.devices.includes(userAgent)) {
       reasons.push('New device detected');
-    }
-  }
-
   // Check failed attempts
   if (pattern.failedAttempts > 3) {
     reasons.push('Multiple failed attempts');
-  }
-
   // Update pattern
   pattern.times.push(currentHour);
   if (pattern.times.length > 100) pattern.times.shift();
-  
   if (location && !pattern.locations.includes(location)) {
     pattern.locations.push(location);
     if (pattern.locations.length > 10) pattern.locations.shift();
-  }
-  
   if (!pattern.devices.includes(userAgent)) {
     pattern.devices.push(userAgent);
     if (pattern.devices.length > 5) pattern.devices.shift();
-  }
-
   await redis.set(key, pattern, { ex: 2592000 }); // 30 days
-
   const suspicious = reasons.length > 0;
-  
   if (suspicious) {
     await logAudit({
       type: 'anomaly_detected',
@@ -79,11 +61,7 @@ export async function checkLoginAnomaly(
       ip,
       details: reasons.join(', '),
     });
-  }
-
   return { suspicious, reasons };
-}
-
 // Device fingerprinting
 export function generateDeviceFingerprint(req: Request): string {
   const headers = [
@@ -92,16 +70,12 @@ export function generateDeviceFingerprint(req: Request): string {
     req.headers.get('accept-encoding'),
     req.headers.get('accept'),
   ].join('|');
-  
   return crypto
     .createHash('sha256')
     .update(headers)
     .digest('hex');
-}
-
 // Impossible travel detection
 export async function checkImpossibleTravel(
-  userId: string,
   currentLocation: { lat: number; lon: number },
   timestamp: number
 ): Promise<boolean> {
@@ -111,12 +85,9 @@ export async function checkImpossibleTravel(
     lon: number;
     timestamp: number;
   }>(lastLocationKey);
-
   if (!lastLocation) {
     await redis.set(lastLocationKey, { ...currentLocation, timestamp }, { ex: 86400 });
     return false;
-  }
-
   const timeDiff = (timestamp - lastLocation.timestamp) / 3600000; // hours
   const distance = calculateDistance(
     lastLocation.lat,
@@ -124,25 +95,16 @@ export async function checkImpossibleTravel(
     currentLocation.lat,
     currentLocation.lon
   );
-
   const maxSpeed = 900; // km/h (airplane speed)
   const possibleDistance = maxSpeed * timeDiff;
-
   if (distance > possibleDistance) {
-    await logAudit({
       type: 'impossible_travel',
-      sub: userId,
       timestamp,
       ip: '',
       details: `Distance: ${distance}km in ${timeDiff}h`,
-    });
     return true;
-  }
-
   await redis.set(lastLocationKey, { ...currentLocation, timestamp }, { ex: 86400 });
   return false;
-}
-
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Earth radius in km
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -153,4 +115,3 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
     Math.sin(dLon/2) * Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
-}

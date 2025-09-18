@@ -11,7 +11,6 @@ export async function GET() {
       redisHealthy = true;
     } else {
       // InMemoryStore doesn't have ping, but if we got here it's working
-      redisHealthy = true;
     }
     
     return NextResponse.json({

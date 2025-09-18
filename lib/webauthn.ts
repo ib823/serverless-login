@@ -13,18 +13,15 @@ export function rpFromRequest(req: Request) {
   
   console.log('🔴 CRITICAL DEBUG - RP ID:', rpID);
   console.log('🔴 CRITICAL DEBUG - Full URL:', url.toString());
-  
   return {
     rpID: rpID,
     origin: `${url.protocol}//${url.host}`,
     rpName: process.env.RP_NAME || "Passkeys IdP",
   };
 }
-
 export function buildRegOptions(user: User, rp: { rpID: string; rpName: string }) {
   const encoder = new TextEncoder();
   const userIDAsBuffer = encoder.encode(user.userId);
-  
   return generateRegistrationOptions({
     rpID: rp.rpID,
     rpName: rp.rpName,
@@ -44,21 +41,12 @@ export function buildRegOptions(user: User, rp: { rpID: string; rpName: string }
     })),
     timeout: 60000, // Add timeout for security
   });
-}
-
 export function buildAuthOptions(user: User | null, rpID: string) {
   return generateAuthenticationOptions({
     rpID,
     allowCredentials: user ? user.credentials.map(c => ({
-      id: Buffer.from(c.credId, "base64url"),
-      type: "public-key" as const,
-      transports: c.transports,
     })) : undefined,
     userVerification: "required",
-    timeout: 60000, // Add timeout for security
-  });
-}
-
 export async function verifyReg(resp: any, expectedChallenge: string, rp: { rpID: string; origin: string }) {
   const verification = await verifyRegistrationResponse({
     response: resp,
@@ -66,32 +54,19 @@ export async function verifyReg(resp: any, expectedChallenge: string, rp: { rpID
     expectedOrigin: rp.origin,
     expectedRPID: rp.rpID,
     requireUserVerification: true,
-  });
-
   // Store device metadata if available
   if (verification.verified && verification.registrationInfo) {
     const { credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
     console.log('Device metadata:', { credentialDeviceType, credentialBackedUp });
   }
-
   return verification;
-}
-
 export async function verifyAuth(resp: any, expectedChallenge: string, rp: { rpID: string; origin: string }, pubKeyB64: string, prevCounter: number) {
   const verification = await verifyAuthenticationResponse({
-    response: resp,
-    expectedChallenge,
-    expectedOrigin: rp.origin,
-    expectedRPID: rp.rpID,
     authenticator: {
       credentialID: Buffer.from(resp.rawId || resp.id, "base64url"),
       credentialPublicKey: Buffer.from(pubKeyB64, "base64url"),
       counter: prevCounter,
       transports: resp.response?.transports,
-    },
-    requireUserVerification: true,
-  });
-
   // Critical: Enhanced counter verification to detect cloned authenticators
   if (verification.verified && verification.authenticationInfo) {
     const { newCounter } = verification.authenticationInfo;
@@ -108,12 +83,6 @@ export async function verifyAuth(resp: any, expectedChallenge: string, rp: { rpI
       });
       throw new Error('SECURITY_ALERT: Counter did not increment - possible cloned authenticator detected');
     }
-    
     // Log successful counter increment for audit
     if (newCounter > prevCounter) {
       console.log('✅ Counter verified:', { prevCounter, newCounter });
-    }
-  }
-
-  return verification;
-}

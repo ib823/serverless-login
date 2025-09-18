@@ -8,9 +8,7 @@ export async function POST(request: NextRequest) {
     if (!email) {
       return NextResponse.json({ exists: false });
     }
-
     const user = await getUser(email);
-    
     return NextResponse.json({ exists: !!user });
   } catch (error) {
     // Don't reveal errors

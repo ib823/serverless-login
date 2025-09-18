@@ -13,29 +13,21 @@ export async function POST(request: Request) {
   if (!success) {
     return new Response('Too many attempts', { status: 429 });
   }
-
   try {
     const body = await request.json();
     const { email, response } = body;
-
     const challenge = await popChallenge(`auth:${email}`);
     if (!challenge) return new Response('Challenge expired', { status: 400 });
-
     const user = await getUser(email);
     if (!user) return new Response('User not found', { status: 404 });
-
     const credential = user.credentials.find(c => c.credId === response.id);
     if (!credential) return new Response('Credential not found', { status: 404 });
-
     const rp = rpFromRequest(request);
     const verification = await verifyAuth(response, challenge, rp, credential.publicKey, credential.counter);
-
     if (!verification.verified) return new Response('Invalid authentication', { status: 400 });
-
     // Update counter
     credential.counter = verification.authenticationInfo.newCounter;
     await updateUser(user);
-
     const jwt = await signSession(email, parseInt(process.env.ACCESS_TOKEN_TTL_SEC || '3600'));
     const sessionCookie = serialize('__Host-session', jwt, {
       httpOnly: true,
@@ -44,12 +36,9 @@ export async function POST(request: Request) {
       path: '/',
       maxAge: parseInt(process.env.ACCESS_TOKEN_TTL_SEC || '3600'),
     });
-
     await audit('auth_verify', email, ip);
-
     return new Response(null, { status: 200, headers: { 'Set-Cookie': sessionCookie } });
   } catch (error) {
     console.error('Auth error:', error);
     return new Response('Authentication failed', { status: 500 });
-  }
 }

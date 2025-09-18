@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
     
     const user = await getUser(email);
     
-    // CRITICAL: Use rpFromRequest to get correct RP ID
     const rp = rpFromRequest(request);
     console.log('Auth options RP:', rp);
     

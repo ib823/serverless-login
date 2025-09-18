@@ -15,26 +15,17 @@ export interface Credential {
   friendlyName?: string;
   createdAt?: number;
   lastUsedAt?: number;
-}
-
 export interface AuthCode {
   sub: string;
   code_challenge: string;
   code_challenge_method: string;
   client_id: string;
   redirect_uri: string;
-}
-
 export interface RefreshRecord {
-  sub: string;
   rot: string;
   exp: number;
-}
-
 export interface AuditEvent {
   type: string;
-  sub: string;
   timestamp: number;
   ip: string;
   details?: string;
-}

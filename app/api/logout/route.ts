@@ -9,7 +9,6 @@ export async function POST() {
     path: '/',
     maxAge: 0,
   });
-
   return NextResponse.json(
     { success: true },
     { headers: { 'Set-Cookie': sessionCookie } }
